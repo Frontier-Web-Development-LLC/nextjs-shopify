@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Banner,
   Card,
@@ -11,10 +11,9 @@ import {
   PageActions,
   TextField,
   Toast,
-} from "@shopify/polaris";
-import store from "store-js";
-import gql from "graphql-tag";
-import { Mutation } from "react-apollo";
+} from '@shopify/polaris';
+import gql from 'graphql-tag';
+import { Mutation } from 'react-apollo';
 
 const UPDATE_PRICE = gql`
   mutation productVariantUpdate($input: ProductVariantInput!) {
@@ -32,9 +31,9 @@ const UPDATE_PRICE = gql`
 
 class EditProduct extends React.Component {
   state = {
-    discount: "",
-    price: "",
-    variantId: "",
+    discount: '',
+    price: '',
+    variantId: '',
     showToast: false,
   };
 
@@ -48,11 +47,11 @@ class EditProduct extends React.Component {
       <Mutation mutation={UPDATE_PRICE}>
         {(handleSubmit, { error, data }) => {
           const showError = error && (
-            <Banner status="critical">{error.message}</Banner>
+            <Banner status='critical'>{error.message}</Banner>
           );
           const showToast = data && data.productVariantUpdate && (
             <Toast
-              content="Sucessfully updated"
+              content='Sucessfully updated'
               onDismiss={() => this.setState({ showToast: false })}
             />
           );
@@ -63,24 +62,24 @@ class EditProduct extends React.Component {
                   {showToast}
                   <Layout.Section>{showError}</Layout.Section>
                   <Layout.Section>
-                    <DisplayText size="large">{name}</DisplayText>
+                    <DisplayText size='large'>{name}</DisplayText>
                     <Form>
                       <Card sectioned>
                         <FormLayout>
                           <FormLayout.Group>
                             <TextField
-                              prefix="$"
+                              prefix='$'
                               value={price}
                               disabled
-                              label="Original price"
-                              type="price"
+                              label='Original price'
+                              type='price'
                             />
                             <TextField
-                              prefix="$"
+                              prefix='$'
                               value={discount}
-                              onChange={this.handleChange("discount")}
-                              label="Discounted price"
-                              type="discount"
+                              onChange={this.handleChange('discount')}
+                              label='Discounted price'
+                              type='discount'
                             />
                           </FormLayout.Group>
                           <p>This sale price will expire in two weeks</p>
@@ -89,7 +88,7 @@ class EditProduct extends React.Component {
                       <PageActions
                         primaryAction={[
                           {
-                            content: "Save",
+                            content: 'Save',
                             onAction: () => {
                               const productVariableInput = {
                                 id: variantId,
@@ -103,7 +102,7 @@ class EditProduct extends React.Component {
                         ]}
                         secondaryActions={[
                           {
-                            content: "Remove discount",
+                            content: 'Remove discount',
                           },
                         ]}
                       />
@@ -123,7 +122,6 @@ class EditProduct extends React.Component {
   };
 
   itemToBeConsumed = () => {
-    const item = store.get("item");
     const price = item.variants.edges[0].node.price;
     const variantId = item.variants.edges[0].node.id;
     const discounter = price * 0.1;

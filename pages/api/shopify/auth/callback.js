@@ -1,7 +1,7 @@
-import shopify from "../../../../lib/shopify";
+import shopify from '../../../../lib/shopify';
 
 export default async function shopifyAuthCallback(req, res) {
-	const { oAuthCallback } = shopify;
+  const { oAuthCallback } = shopify;
 
-	await oAuthCallback(req, res);
+  await oAuthCallback(req, res);
 }

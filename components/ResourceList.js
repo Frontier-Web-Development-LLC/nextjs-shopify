@@ -1,4 +1,4 @@
-import React from "react"
+import React from 'react';
 import gql from 'graphql-tag';
 import { Query } from 'react-apollo';
 import {
@@ -8,7 +8,6 @@ import {
   TextStyle,
   Thumbnail,
 } from '@shopify/polaris';
-import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
 
@@ -48,18 +47,19 @@ class ResourceListWithProducts extends React.Component {
     const app = this.context;
     const redirectToProduct = () => {
       const redirect = Redirect.create(app);
-      redirect.dispatch(
-        Redirect.Action.APP,
-        '/edit-products',
-      );
+      redirect.dispatch(Redirect.Action.APP, '/edit-products');
     };
 
     const twoWeeksFromNow = new Date(Date.now() + 12096e5).toDateString();
     return (
-      <Query query={GET_PRODUCTS_BY_ID} variables={{ ids: store.get('ids') }}>
+      <Query query={GET_PRODUCTS_BY_ID}>
         {({ data, loading, error }) => {
-          if (loading) { return <div>Loading…</div>; }
-          if (error) { return <div>{error.message}</div>; }
+          if (loading) {
+            return <div>Loading…</div>;
+          }
+          if (error) {
+            return <div>{error.message}</div>;
+          }
           console.log(data);
           return (
             <Card>
@@ -89,15 +89,13 @@ class ResourceListWithProducts extends React.Component {
                       media={media}
                       accessibilityLabel={`View details for ${item.title}`}
                       onClick={() => {
-                        store.set('item', item);
                         redirectToProduct();
-                      }
-                      }
+                      }}
                     >
                       <Stack>
                         <Stack.Item fill>
                           <h3>
-                            <TextStyle variation="strong">
+                            <TextStyle variation='strong'>
                               {item.title}
                             </TextStyle>
                           </h3>
