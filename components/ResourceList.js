@@ -1,5 +1,4 @@
 import React from 'react';
-import gql from 'graphql-tag';
 import { Query } from 'react-apollo';
 import {
   Card,
@@ -10,49 +9,28 @@ import {
 } from '@shopify/polaris';
 import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
-
-const GET_PRODUCTS_BY_ID = gql`
-  query getProducts($ids: [ID!]!) {
-    nodes(ids: $ids) {
-      ... on Product {
-        title
-        handle
-        descriptionHtml
-        id
-        images(first: 1) {
-          edges {
-            node {
-              originalSrc
-              altText
-            }
-          }
-        }
-        variants(first: 1) {
-          edges {
-            node {
-              price
-              id
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+import { GET_PRODUCTS_BY_ID } from '../lib/gql/queries';
 
 class ResourceListWithProducts extends React.Component {
   static contextType = Context;
 
   render() {
     const app = this.context;
-    const redirectToProduct = () => {
+    const redirectToProduct = (id) => {
+      const idString = id.split('/').pop();
+      console.log(idString);
       const redirect = Redirect.create(app);
-      redirect.dispatch(Redirect.Action.APP, '/edit-products');
+      redirect.dispatch(
+        Redirect.Action.APP,
+        `/edit-basket?product=${idString}`
+      );
     };
 
-    const twoWeeksFromNow = new Date(Date.now() + 12096e5).toDateString();
     return (
-      <Query query={GET_PRODUCTS_BY_ID}>
+      <Query
+        query={GET_PRODUCTS_BY_ID}
+        variables={{ ids: this.props.productIds }}
+      >
         {({ data, loading, error }) => {
           if (loading) {
             return <div>Loading…</div>;
@@ -60,12 +38,11 @@ class ResourceListWithProducts extends React.Component {
           if (error) {
             return <div>{error.message}</div>;
           }
-          console.log(data);
           return (
             <Card>
               <ResourceList
                 showHeader
-                resourceName={{ singular: 'Product', plural: 'Products' }}
+                resourceName={{ singular: 'Basket', plural: 'Baskets' }}
                 items={data.nodes}
                 renderItem={(item) => {
                   const media = (
@@ -89,7 +66,7 @@ class ResourceListWithProducts extends React.Component {
                       media={media}
                       accessibilityLabel={`View details for ${item.title}`}
                       onClick={() => {
-                        redirectToProduct();
+                        redirectToProduct(item.id);
                       }}
                     >
                       <Stack>
@@ -102,9 +79,6 @@ class ResourceListWithProducts extends React.Component {
                         </Stack.Item>
                         <Stack.Item>
                           <p>${price}</p>
-                        </Stack.Item>
-                        <Stack.Item>
-                          <p>Expires on {twoWeeksFromNow} </p>
                         </Stack.Item>
                       </Stack>
                     </ResourceList.Item>
