@@ -3,6 +3,10 @@ import { Page, Layout, EmptyState, Banner } from '@shopify/polaris';
 import { authenticateShopifyPage } from '@bluebeela/nextjs-shopify-auth';
 import { ResourcePicker, TitleBar } from '@shopify/app-bridge-react';
 import ResourceListWithProducts from '../components/ResourceList';
+import { ENDPOINT } from '../lib/gql/constants';
+import { DELETE_BASKET_METAFIELD } from '../lib/gql/mutations';
+import { useRouter } from 'next/router';
+import { request } from 'graphql-request';
 
 const img = 'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg';
 
@@ -11,6 +15,7 @@ const Index = () => {
   const [open, setOpen] = useState(false);
   const [baskets, setBaskets] = useState(null);
   const [showToast, setToast] = useState(false);
+  const router = useRouter();
 
   const getAllProducts = async () => {
     const res = await (await fetch('/api/basket/all')).json();
@@ -37,9 +42,32 @@ const Index = () => {
     setOpen(false);
   };
 
+  const handleDeletion = async (id, metafieldId) => {
+    if (metafieldId)
+      await request(ENDPOINT, DELETE_BASKET_METAFIELD, {
+        input: {
+          id: metafieldId,
+        },
+      });
+
+    fetch(`/api/basket/delete?product=${id}`, { method: 'DELETE' })
+      .then((res) => res.json())
+      .then(async (data) => await getAllProducts());
+  };
+
   useEffect(() => {
-    getAllProducts();
+    if (router.query?.status === 'refresh') {
+      console.log('REFRESHING');
+      getAllProducts();
+      console.log(baskets);
+    }
   }, []);
+
+  useEffect(() => {
+    if (loading) {
+      getAllProducts();
+    }
+  }, [loading]);
 
   return (
     !loading && (
@@ -75,6 +103,7 @@ const Index = () => {
           <>
             <ResourceListWithProducts
               productIds={baskets.map((product) => product.productId)}
+              handleDeletion={handleDeletion}
             />
             {showToast && (
               <Banner

@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { GET_PRODUCT_BY_ID } from '../lib/gql//queries';
-import { Page } from '@shopify/polaris';
+import { ENDPOINT } from '../lib/gql/constants';
+import { GET_PRODUCT_BY_ID } from '../lib/gql/queries';
+import {
+  UPDATE_BASKET_ITEMS,
+  CREATE_BASKET_METAFIELD,
+} from '../lib/gql/mutations';
+import { Page, Button } from '@shopify/polaris';
 import {
   useAppBridge,
   ResourcePicker,
@@ -9,10 +14,14 @@ import {
 } from '@shopify/app-bridge-react';
 import { Redirect } from '@shopify/app-bridge/actions';
 
-import { Query, Mutation } from 'react-apollo';
+import { request } from 'graphql-request';
+import MetafieldQueryContainer from '../components/MetafieldQueryContainer';
 
 const EditProduct = () => {
+  const [updateLoading, setUpdateLoading] = useState(true);
   const [productId, setProductId] = useState(null);
+  const [productData, setProductData] = useState(null);
+  const [open, setOpen] = useState(false);
 
   const app = useAppBridge();
   const router = useRouter();
@@ -23,9 +32,80 @@ const EditProduct = () => {
     }
   }, []);
 
+  const refreshFetch = async () => {
+    const res = await request(ENDPOINT, GET_PRODUCT_BY_ID, {
+      id: 'gid://shopify/Product/' + productId,
+    });
+    setProductData(res);
+    setUpdateLoading(false);
+    return res;
+  };
+
+  const addToBasket = async (uniqueCombinedValues) => {
+    const res = await request(ENDPOINT, UPDATE_BASKET_ITEMS, {
+      input: {
+        id: productData.product.id,
+        metafields: [
+          {
+            id: productData.product.metafield.id,
+            value: uniqueCombinedValues.join(','),
+            valueType: 'STRING',
+          },
+        ],
+      },
+    });
+    await refreshFetch();
+  };
+
+  const createBasketMetafield = async (uniqueCombinedValues) => {
+    const res = await request(ENDPOINT, CREATE_BASKET_METAFIELD, {
+      input: {
+        id: productData.product.id,
+        metafields: [
+          {
+            namespace: 'ProductData',
+            key: 'basketData',
+            value: uniqueCombinedValues.join(','),
+            valueType: 'STRING',
+          },
+        ],
+      },
+    });
+    await refreshFetch();
+  };
+
+  useEffect(() => {
+    !productData && refreshFetch();
+  });
+
+  useEffect(() => {
+    productId && refreshFetch();
+  }, [updateLoading]);
+
+  // takes ids of selected resources, compares them against existing ids, adds baskets corresponding with ids that don't already exist
+  const handleSelection = async (resources) => {
+    let existingValues = [];
+
+    if (productData.product?.metafield?.value) {
+      const initialExistingValues = productData.product.metafield.value;
+      existingValues = initialExistingValues.split(',').map((value) => value);
+    }
+
+    const newValues = resources.selection.map((product) => product.id);
+    const combinedValues = [...existingValues, ...newValues];
+    const uniqueCombinedValues = [...new Set(combinedValues)];
+
+    if (productData.product.metafield) {
+      addToBasket(uniqueCombinedValues);
+    } else {
+      createBasketMetafield(uniqueCombinedValues);
+    }
+    setOpen(false);
+  };
+
   const backToAllBaskets = () => {
     const redirect = Redirect.create(app);
-    redirect.dispatch(Redirect.Action.APP, '/');
+    redirect.dispatch(Redirect.Action.APP, '/?status=refresh');
   };
   return (
     <Page>
@@ -36,20 +116,32 @@ const EditProduct = () => {
           onAction: () => setOpen(true),
         }}
       />
-      {productId && (
+      <ResourcePicker
+        resourceType='Product'
+        showVariants={false}
+        open={open}
+        onSelection={(resources) => handleSelection(resources)}
+        onCancel={() => setOpen(false)}
+      />
+      {productData && (
         <>
-          <Query query={GET_PRODUCT_BY_ID} variables={{ id: productId }}>
-            {({ data, loading, error }) => {
-              if (loading) {
-                return <div>Loading…</div>;
-              }
-              if (error) {
-                return <div>{error.message}</div>;
-              }
-              return <p>TEST</p>;
-            }}
-          </Query>
-          <button onClick={() => backToAllBaskets()}>Back</button>
+          <div style={{ marginBottom: '2rem' }}>
+            <h3
+              style={{
+                textAlign: 'center',
+                marginBottom: '2rem',
+                fontWeight: 'bolder',
+              }}
+            ></h3>
+            <MetafieldQueryContainer
+              product={productData.product}
+              ids={productData.product?.metafield?.value.split(',')}
+              metafieldId={productData.product?.metafield?.id}
+              setUpdateLoading={setUpdateLoading}
+            />
+          </div>
+
+          <Button onClick={() => backToAllBaskets()}>Back</Button>
         </>
       )}
     </Page>
