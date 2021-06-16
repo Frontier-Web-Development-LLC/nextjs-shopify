@@ -1,35 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { GET_PRODUCTS_BY_ID } from '../lib/gql/queries';
+import { ENDPOINT } from '../lib/gql/constants';
 import {
   UPDATE_BASKET_ITEMS,
   DELETE_BASKET_METAFIELD,
 } from '../lib/gql/mutations';
 import { Query, useMutation } from 'react-apollo';
 import { Card, OptionList } from '@shopify/polaris';
+import { request } from 'graphql-request';
 
 const MetafieldQueryContainer = ({
   product,
   ids,
-  metafieldId,
+  valueMetafieldId,
+  handleMetafieldId,
   setUpdateLoading,
 }) => {
   const [selected, setSelected] = useState([]);
-  const [selectFilter, setSelectFilter] = useState([]);
+  const [valueSelectFilter, setValueSelectFilter] = useState([]);
+  const [handleSelectFilter, setHandleSelectFilter] = useState([]);
   const [handleRemoveFromBasket, { data }] = useMutation(UPDATE_BASKET_ITEMS);
   const [handleDeleteBasketMetafield, { metafieldData }] = useMutation(
     DELETE_BASKET_METAFIELD
   );
 
   const removeController = async () => {
-    if (selectFilter.length > 0) {
+    if (valueSelectFilter.length > 0) {
       await handleRemoveFromBasket({
         variables: {
           input: {
             id: product.id,
             metafields: [
               {
-                id: metafieldId,
-                value: selectFilter.join(','),
+                id: valueMetafieldId,
+                value: valueSelectFilter.join(','),
+                valueType: 'STRING',
+              },
+              {
+                id: handleMetafieldId,
+                value: handleSelectFilter.join(','),
                 valueType: 'STRING',
               },
             ],
@@ -40,7 +49,14 @@ const MetafieldQueryContainer = ({
       await handleDeleteBasketMetafield({
         variables: {
           input: {
-            id: metafieldId,
+            id: handleMetafieldId,
+          },
+        },
+      });
+      await handleDeleteBasketMetafield({
+        variables: {
+          input: {
+            id: valueMetafieldId,
           },
         },
       });
@@ -48,11 +64,23 @@ const MetafieldQueryContainer = ({
     setUpdateLoading(true);
   };
 
+  const updateFilteredHandles = async () => {
+    const res = await request(ENDPOINT, GET_PRODUCTS_BY_ID, {
+      ids: valueSelectFilter,
+    });
+    const handles = res.nodes.map((node) => node.handle);
+    setHandleSelectFilter(handles);
+  };
+
   useEffect(() => {
     if (ids) {
-      setSelectFilter(ids.filter((id) => !selected.includes(id)));
+      setValueSelectFilter(ids.filter((id) => !selected.includes(id)));
     }
   }, [selected]);
+
+  useEffect(() => {
+    updateFilteredHandles();
+  }, [valueSelectFilter]);
 
   return ids && ids.length > 0 ? (
     <Query query={GET_PRODUCTS_BY_ID} variables={{ ids: ids }}>

@@ -41,14 +41,19 @@ const EditProduct = () => {
     return res;
   };
 
-  const addToBasket = async (uniqueCombinedValues) => {
+  const addToBasket = async (uniqueCombinedValues, uniqueCombinedHandles) => {
     const res = await request(ENDPOINT, UPDATE_BASKET_ITEMS, {
       input: {
         id: productData.product.id,
         metafields: [
           {
-            id: productData.product.metafield.id,
+            id: productData.product.metafields.edges[0].node.id,
             value: uniqueCombinedValues.join(','),
+            valueType: 'STRING',
+          },
+          {
+            id: productData.product.metafields.edges[1].node.id,
+            value: uniqueCombinedHandles.join(','),
             valueType: 'STRING',
           },
         ],
@@ -57,7 +62,10 @@ const EditProduct = () => {
     await refreshFetch();
   };
 
-  const createBasketMetafield = async (uniqueCombinedValues) => {
+  const createBasketMetafield = async (
+    uniqueCombinedValues,
+    uniqueCombinedHandles
+  ) => {
     const res = await request(ENDPOINT, CREATE_BASKET_METAFIELD, {
       input: {
         id: productData.product.id,
@@ -66,6 +74,12 @@ const EditProduct = () => {
             namespace: 'ProductData',
             key: 'basketData',
             value: uniqueCombinedValues.join(','),
+            valueType: 'STRING',
+          },
+          {
+            namespace: 'ProductData',
+            key: 'basketHandles',
+            value: uniqueCombinedHandles.join(','),
             valueType: 'STRING',
           },
         ],
@@ -85,9 +99,11 @@ const EditProduct = () => {
   // takes ids of selected resources, compares them against existing ids, adds baskets corresponding with ids that don't already exist
   const handleSelection = async (resources) => {
     let existingValues = [];
+    let existingHandles = [];
 
-    if (productData.product?.metafield?.value) {
-      const initialExistingValues = productData.product.metafield.value;
+    if (productData.product?.metafields?.edges[0]?.node?.value) {
+      const initialExistingValues =
+        productData.product.metafields.edges[0].node.value;
       existingValues = initialExistingValues.split(',').map((value) => value);
     }
 
@@ -95,10 +111,20 @@ const EditProduct = () => {
     const combinedValues = [...existingValues, ...newValues];
     const uniqueCombinedValues = [...new Set(combinedValues)];
 
-    if (productData.product.metafield) {
-      addToBasket(uniqueCombinedValues);
+    if (productData.product?.metafields?.edges[1]?.node?.value) {
+      const initialExistingHandles =
+        productData.product.metafields.edges[1].node.value;
+      existingHandles = initialExistingHandles.split(',').map((value) => value);
+    }
+
+    const newHandles = resources.selection.map((product) => product.handle);
+    const combinedHandles = [...existingHandles, ...newHandles];
+    const uniqueCombinedHandles = [...new Set(combinedHandles)];
+
+    if (productData.product.metafields?.edges[0]?.node) {
+      addToBasket(uniqueCombinedValues, uniqueCombinedHandles);
     } else {
-      createBasketMetafield(uniqueCombinedValues);
+      createBasketMetafield(uniqueCombinedValues, uniqueCombinedHandles);
     }
     setOpen(false);
   };
@@ -135,8 +161,18 @@ const EditProduct = () => {
             ></h3>
             <MetafieldQueryContainer
               product={productData.product}
-              ids={productData.product?.metafield?.value.split(',')}
-              metafieldId={productData.product?.metafield?.id}
+              ids={productData.product?.metafields?.edges[0]?.node?.value.split(
+                ','
+              )}
+              handles={productData.product?.metafields?.edges[1]?.node?.value.split(
+                ','
+              )}
+              valueMetafieldId={
+                productData.product?.metafields?.edges[0]?.node?.id
+              }
+              handleMetafieldId={
+                productData.product?.metafields?.edges[1]?.node?.id
+              }
               setUpdateLoading={setUpdateLoading}
             />
           </div>

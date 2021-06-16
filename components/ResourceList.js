@@ -128,11 +128,15 @@ class ResourceListWithProducts extends React.Component {
                           </Stack.Item>
                           <div
                             style={{ zIndex: '999' }}
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              this.props.handleDeletion(
+                              await this.props.handleDeletion(
                                 item.id,
-                                item.metafield?.id
+                                item.metafields.edges[0]?.node?.id
+                              );
+                              await this.props.handleDeletion(
+                                item.id,
+                                item.metafields.edges[1]?.node?.id
                               );
                             }}
                           >
