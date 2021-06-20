@@ -120,7 +120,7 @@ class ResourceListWithProducts extends React.Component {
                             </h3>
                           </Stack.Item>
                           <Stack.Item>
-                            {!item.metafield ? (
+                            {!item.metafields.edges[0] ? (
                               <Badge status='info'>Pending</Badge>
                             ) : (
                               <Badge status={'success'}>Active</Badge>
