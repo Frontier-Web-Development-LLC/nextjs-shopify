@@ -151,6 +151,10 @@ const EditProduct = () => {
       />
       {productData && (
         <>
+          <p>
+            <strong>Note:</strong> Basket product options will be listed on the
+            product page in the order they appear below.
+          </p>
           <div style={{ marginBottom: '2rem' }}>
             <h3
               style={{
